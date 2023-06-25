@@ -8,19 +8,22 @@ import uuid
 import bcrypt
 from datetime import datetime
 import boto3
+import mysql.connector, mysql.connector.pooling
 
-db = mysql.connect(
+pool = mysql.connector.pooling.MySQLConnectionPool(
+    host = "localhost",
+    user = "root",
+    passwd = dbpwd,
+    database = "fullstackblog",
+    buffered = True,
+    pool_size = 3
+)
+
+'''db = mysql.connect(
     host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
     user="admin",
     passwd=dbpwd_remote,
-    database="fullstackblog")
-'''db = mysql.connect(
-        host="localhost",
-        user="root",
-        passwd=dbpwd,
-        database="fullstackblog")'''
-
-print(db)
+    database="fullstackblog")'''
 
 session = boto3.Session(
                     aws_access_key_id=aws_access_key_id,
@@ -34,7 +37,8 @@ for bucket in s3.buckets.all():
 
 app = Flask(__name__)
 
-CORS(app,supports_credentials=True,origins=["http://localhost:3000", "rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com"],expose_headers='Set-Cookie')
+#CORS(app,supports_credentials=True,origins=["http://localhost:3000", "rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com"],expose_headers='Set-Cookie')
+CORS(app,supports_credentials=True,origins=["http://localhost:3000", "http://localhost:5000"],expose_headers='Set-Cookie')
 
 
 @app.route('/users', methods=['GET', 'POST'])
@@ -59,14 +63,10 @@ def manage_post():
         return get_post(post_id)
     else:
         check_login()
-        return add_post()
+        return add_post(session_id=None)
 
 def get_all_users():
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     query = "select id, name, role, created_at, login from users"
     cursor = db.cursor()
     cursor.execute(query)
@@ -78,15 +78,12 @@ def get_all_users():
     for r in records:
         created_at = r[3].strftime("%Y-%m-%d %H:%M:%S")
         data.append(dict(zip(header, [r[0], r[1], r[2], created_at, r[4]])))
+    db.close()
     return json.dumps(data)
 
 @app.route('/user/<login>', methods=['GET'])
 def get_user(login):
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     query = "SELECT id, name, role, created_at, login, password_hash FROM users WHERE login = %s"
     values = (login,)
     cursor = db.cursor()
@@ -98,16 +95,13 @@ def get_user(login):
     header = ['id', 'name', 'role', 'created_at', 'login', 'password_hash']
     created_at = record[3].strftime("%Y-%m-%d %H:%M:%S")
     response = dict(zip(header, [record[0], record[1], record[2], created_at, record[4], record[5]]))
+    db.close()
     return response
 
 
 @app.route('/registration', methods=['POST'])
 def add_user():
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     data = request.get_json()
     print(data)
     hashed = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
@@ -118,15 +112,12 @@ def add_user():
     cursor.execute(query, values)
     db.commit()
     cursor.close()
+    db.close()
     return get_user(data['login'])
 
 
 def get_post(id):
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     query = "select id, title, body, created_at, image, published, likes from posts where id = %s"
     values = (id,)
     cursor = db.cursor()
@@ -137,22 +128,18 @@ def get_post(id):
     header = ['id', 'title', 'body', 'created_at', 'image', 'published', 'likes']
     image_url = (record[4]).decode("utf-8")
     created_at = record[3].strftime("%Y-%m-%d %H:%M:%S")
+    db.close()
     return json.dumps(dict(zip(header, [record[0], record[1], record[2], created_at, image_url, record[5], record[6]])))
 
 
 def get_all_posts():
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     query = "select id, title, body, created_at, image, published, likes from posts"
     cursor = db.cursor()
     cursor.execute(query)
     records = cursor.fetchall()
     cursor.nextset()  # Skip any remaining result sets
     cursor.close()
-
     header = ['id', 'title', 'body', 'created_at', 'image', 'published', 'likes']
     data = []
     for r in records:
@@ -163,40 +150,41 @@ def get_all_posts():
         else:
             image_url = None
         data.append(dict(zip(header, [r[0], r[1], r[2], created_at, image_url, r[5], r[6]])))
+    db.close()
     return json.dumps(data)
 
 
 @app.route('/getId/<session_id>', methods=['GET'])
 def getId(session_id):
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     query = "SELECT id FROM sessions WHERE session_id = %s"
     values = (session_id,)
     cursor = db.cursor()
     cursor.execute(query, values)
     record = cursor.fetchone()
     cursor.close()
-
+    db.close()
     if record is not None:
         header = ['id']
         return json.dumps(dict(zip(header, record)))
     else:
         return "Session ID not found"
 
-def add_post():
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+@app.route('/post/<session_id>', methods=['POST','GET'])
+def add_post(session_id):
+    db = pool.get_connection()
+    query = "SELECT id FROM sessions WHERE session_id = %s"
+    values = (session_id,)
+    cursor = db.cursor()
+    cursor.execute(query, values)
+    record = cursor.fetchone()
+    if not record:
+        abort(401)
     data = request.get_json()
     print(data)
     query = "INSERT INTO posts (owner_id, title, image, body, created_at, published, likes) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     values = (
-        data['owner_id'],
+        record[0],
         data['title'],
         data['image'],
         data['body'],
@@ -209,16 +197,13 @@ def add_post():
     db.commit()
     new_post_id = cursor.lastrowid
     cursor.close()
+    db.close()
     return get_post(new_post_id)
 
 
 @app.route('/login', methods=['POST'])
 def login():
-    db = mysql.connect(
-        host="rustam-database.cbrdyb6rueag.eu-central-1.rds.amazonaws.com",
-        user="admin",
-        passwd=dbpwd_remote,
-        database="fullstackblog")
+    db = pool.get_connection()
     data = request.get_json()
     print(data)
     query = "select login, password_hash, id from users where login = %s"
@@ -246,21 +231,24 @@ def login():
         session_id = get_session_id(user_id)
     resp = make_response()
     resp.set_cookie("session_id", value=str(session_id), path="/", samesite='None', secure=True)
-
+    db.close()
     return resp
 
 def is_session_exist(id):
+    db = pool.get_connection()
     query = "select id, session_id from sessions where id= %s"
     values = (id,)
     cursor = db.cursor()
     cursor.execute(query, values)
     record = cursor.fetchone()
     cursor.close()
+    db.close()
     if not record:
         return False
     return True
 
 def get_session_id(user_id):
+    db = pool.get_connection()
     query = "select session_id from sessions where id = %s"
     values = (user_id,)
     cursor = db.cursor()
@@ -270,9 +258,12 @@ def get_session_id(user_id):
     if record:
         session_id = record[0]
         return session_id
+    db.close()
     return None
+
 @app.route('/check_login', methods=['GET'])
 def check_login():
+    db = pool.get_connection()
     print(request)
     session_id = request.cookies.get("session_id")
     if not session_id:
@@ -291,10 +282,12 @@ def check_login():
         "session_id": session_id,
         "isAuthenticated": True  # Assuming authentication is successful
     }
+    db.close()
     return json.dumps(response_data)
 
 @app.route('/logout', methods=['GET','POST'])
 def logout():
+    db = pool.get_connection()
     data = request.get_json()
     session_id = data['session_id']
     if not session_id:
@@ -310,6 +303,7 @@ def logout():
     response_data = {
         "message": "Logout successful"
     }
+    db.close()
     return json.dumps(response_data)
 
 

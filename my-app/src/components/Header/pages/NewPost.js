@@ -37,7 +37,6 @@ function NewPost() {
     }
   };
   
-
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -61,21 +60,18 @@ function NewPost() {
       });
   };
 
-  const addPost = async () => {
+  const addPost = () => {
     debugger;
     return new Promise((resolve, reject) => {
         debugger;
-      const sessionId = document.cookie
+      const session_id = document.cookie
         .split('; ')
         .find((row) => row.startsWith('session_id='))
         .split('=')[1];
-  
-      getId(sessionId)
-        .then((user_id) => {
-            debugger;
-          const url = `http://localhost:5000/post?id=${user_id}`;
+
+          const url = `http://localhost:5000/post/${session_id}`;
           const data = {
-            owner_id: user_id,
+            
             title: title,
             image:
               'https://images.unsplash.com/reserve/LJIZlzHgQ7WPSh5KVTCB_Typewriter.jpg?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=696&q=80',
@@ -101,16 +97,9 @@ function NewPost() {
               setOpen(true);
               reject(err); // Reject the promise
             });
-        })
-        .catch((err) => {
-          console.error(err);
-          reject(err); // Reject the promise
-        });
     });
   };
   
-  
-
   return (
     <>
       <Box
@@ -125,9 +114,6 @@ function NewPost() {
           <TextField
             sx={{
               width: 400,
-              '& svg': {
-                viewBox: '0 0 100 4',
-              },  
             }}
             id="outlined-multiline-flexible"
             label="Title:"
@@ -139,9 +125,6 @@ function NewPost() {
           <TextField
             sx={{
               width: 800,
-              '& svg': {
-                viewBox: '0 0 100 4',
-              },
             }}
             id="outlined-multiline-static"
             label="Multiline"

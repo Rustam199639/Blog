@@ -101,7 +101,6 @@ function LogInPage() {
             </Alert>
         </Snackbar>
         */}
-        
           </Center>
         </Stack>
       </Center>
