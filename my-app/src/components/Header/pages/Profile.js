@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import MediaCard from './MediaCard';
+import { useNavigate } from 'react-router-dom';
+import MediaCard from '../../LeftColumnComp/MediaCard';
 
 
-function Leftcolumn() {
+function Profile() {
   const [posts, setPosts] = useState([]);
   const [resp, setResp] = useState(null);
+  const navigate = useNavigate();
   
   const BlogsList = () => {
     const listItems = posts.map((item) => (
-      <div key={item.id} >
+      <div key={item.id} onClick={() => navigate(`/post/${item.id}`)}>
         <MediaCard
           key={item.id}
           id={item.id}
@@ -35,6 +37,7 @@ function Leftcolumn() {
       .get(url, {withCredentials: true})
       .then((res) => {
         setPosts(res.data);
+        console.log(res.data);
         setResp(null);
       })
       .catch((err) => {
@@ -54,4 +57,4 @@ function Leftcolumn() {
   );
 }
 
-export default Leftcolumn;
+export default Profile;

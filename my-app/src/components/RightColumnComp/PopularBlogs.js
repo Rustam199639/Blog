@@ -23,7 +23,7 @@ function PopularBlogs(){
             </ListItemButton>
           </ListItem>    
         ));
-        return <>{listItems}</>;
+        return <div>{listItems}</div>;
     };
 
     const blogs =[

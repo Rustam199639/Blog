@@ -21,7 +21,6 @@ function NewPost() {
   const [open, setOpen] = React.useState(false);
   const [title, setTitle] = React.useState('');
   const [body, setBody] = React.useState('');
-  const [isPosted, setPost] = React.useState(false);
   const navigate = useNavigate();
 
   const sleep = (milliseconds) => {
@@ -30,7 +29,6 @@ function NewPost() {
   const handleClick = async () => {
     try {
       await addPost();
-      debugger
 
     } catch (error) {
       console.error(error);
@@ -44,34 +42,10 @@ function NewPost() {
     setOpen(false);
   };
 
-  const getId = (session_id) => {
-    debugger;
-    const url = `http://localhost:5000/getId/${session_id}`;
-    return axios
-      .get(url)
-      .then(function (response) {
-        const data = response.data;
-        console.log(data);
-        return data.id;
-      })
-      .catch(function (error) {
-        console.error(error);
-        throw error;
-      });
-  };
-
   const addPost = () => {
-    debugger;
     return new Promise((resolve, reject) => {
-        debugger;
-      const session_id = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('session_id='))
-        .split('=')[1];
-
-          const url = `http://localhost:5000/post/${session_id}`;
+          const url = `/server_post`;
           const data = {
-            
             title: title,
             image:
               'https://images.unsplash.com/reserve/LJIZlzHgQ7WPSh5KVTCB_Typewriter.jpg?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=696&q=80',
@@ -87,7 +61,6 @@ function NewPost() {
               setTitle('');
               setBody('');
               setOpen(true);
-              setPost(true);
               await sleep(2000);
               navigate('/');
               resolve(); // Resolve the promise
@@ -101,7 +74,7 @@ function NewPost() {
   };
   
   return (
-    <>
+    <div>
       <Box
         sx={{
           display: 'flex',
@@ -151,7 +124,7 @@ function NewPost() {
           </Snackbar>
         </Stack>
       </Box>
-    </>
+    </div>
   );
 }
 

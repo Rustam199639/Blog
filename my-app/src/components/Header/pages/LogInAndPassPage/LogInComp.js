@@ -9,14 +9,14 @@ function LogInComp(props) {
   };
 
   return (
-    <>
+   
       <Input
         value={props.login}
         onChange={handleChange}
         placeholder="Login"
         size="md"
       />
-    </>
+
   );
 }
 export default LogInComp;

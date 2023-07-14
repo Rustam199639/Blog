@@ -31,10 +31,9 @@ function ResponsiveAppBar() {
                       () => navigate('/contact'),
                       () => navigate('/newPost')]
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
-  
 
   const handleLogout = () => {
-    const url = 'http://localhost:5000/logout';
+    const url = '/server_logout';
     const sessionId = document.cookie.split('; ').find(row => row.startsWith('session_id=')).split('=')[1];
     axios
     .post(url, { session_id: sessionId },)
@@ -51,8 +50,10 @@ function ResponsiveAppBar() {
   };
 
   const handlers2 = [() => navigate('/login')]
-
-  const handlers1 = [() => {},
+  const handleProfile = () => {
+    navigate('/profile')
+  }
+  const handlers1 = [() => handleProfile(),
                      () => {},
                      () => {},
                      () => handleLogout()
@@ -93,7 +94,7 @@ function ResponsiveAppBar() {
     // Function to check authentication status
     const checkAuthentication = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/check_login', {
+        const response = await axios.get('/server_check_login', {
           withCredentials: true, // Add this option to include cookies in the request
         });
   

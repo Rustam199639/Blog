@@ -43,7 +43,6 @@ const theme = createTheme({
 
 
 export default function RegistrationDialog(props) {
-  //debugger;
   const [open, setOpen] = React.useState(false);
   const [openAlert1, setOpenAlert1] = React.useState(false);
   
@@ -53,6 +52,7 @@ export default function RegistrationDialog(props) {
   const [passRegist1, setPassRegist1] = React.useState(null);
   const [passRegist2, setPassRegist2] = React.useState(null);
   const [nameRegist, setNameRegist] = React.useState('');
+  const [isSuccess, setSuccess] = React.useState(false);
 
   const [errorMessages, setErrorMessages] = React.useState({
     errorMessageLogin: '',
@@ -68,7 +68,6 @@ export default function RegistrationDialog(props) {
       [errorType]: errorMessage,
     }));
   };
-
   useEffect(() => {
     console.log("Updated errorMessageMailExist:", errorMessages.errorMessageMailExist);
   }, [errorMessages.errorMessageMailExist]);
@@ -89,8 +88,7 @@ export default function RegistrationDialog(props) {
     setOpen(true);
   };
 
-  const handleClose = () => {
-    debugger;
+  const handleClose = (isSuccess) => {
     setLoginRegist('');
     setPassRegist1(null);
     setPassRegist2(null);
@@ -103,14 +101,12 @@ export default function RegistrationDialog(props) {
       errorMessageRegist: '',
     });
     setOpen(false);
-    props.onClose(nameRegist);
+    props.onClose(nameRegist,isSuccess);
   };
   
 
   const doRegistration = (e) => {
-
-    //debugger;
-    const url = "http://localhost:5000/registration"
+    const url = "/server_registration"
     const data = {
       name:nameRegist,  
       login: loginRegist,
@@ -130,8 +126,7 @@ export default function RegistrationDialog(props) {
   }
  
   const checkIfExist = async (loginUser) => {
-    debugger;
-    const url = `http://localhost:5000/user/${loginUser}`;
+    const url = `/server_user/${loginUser}`;
     try {
       const response = await axios.get(url);
       console.log("Received specific user:", response.data);
@@ -150,7 +145,6 @@ export default function RegistrationDialog(props) {
   };
 
   const checkIfTheSamePass = (firtsPass,secondPass) =>{
-    debugger;
     if (firtsPass === null || secondPass === null || firtsPass === '' || secondPass === ''){
       setErrorMessage('errorMessagePassMatch', "Invalid Passwords");
       return {sameVal : false, valueEmpt : true};
@@ -164,7 +158,6 @@ export default function RegistrationDialog(props) {
   }
 
   const handleRegistration = async () => {
-    debugger;
     if (nameRegist !== '') {
       setErrorMessage('errorMessageName', '');
     } else {
@@ -180,12 +173,10 @@ export default function RegistrationDialog(props) {
     }
     
     setErrorMessage('errorMessagePassMatch', '');//need to ask
-    debugger;
     console.log(errorMessages.errorMessagePassMatch);// ?? why it's not emoty
 
     let result = checkIfTheSamePass(passRegist1, passRegist2);
     if (result.sameVal) {
-      debugger;
       
       console.log("Updated errorMessageMailExist:", errorMessages.errorMessageMailExist);
       if (
@@ -195,13 +186,13 @@ export default function RegistrationDialog(props) {
         errorMessages.errorMessageName === '' &&
         !(await checkIfExist(loginRegist))
       ) {
-        debugger;
+        setSuccess(true);
         await doRegistration();
-        debugger;
-        handleClose();
+        handleClose(true);
       }
     } else {
       handleClickAlert1();
+      //handleClose(false);
       //setErrorMessage('errorMessagePassMatch', "Invalid Passwords");
     }
   };
@@ -217,7 +208,6 @@ export default function RegistrationDialog(props) {
     setOpenAlert1(false);
   };
   
-  //debugger;
   return (
     <ThemeProvider theme={theme}>
     <div>
